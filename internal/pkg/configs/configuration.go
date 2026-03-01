@@ -1,6 +1,7 @@
 package configs
 
 import (
+	"fmt"
 	"github-issue-schedule/internal/pkg/utils"
 	"io/ioutil"
 	"log"
@@ -10,7 +11,12 @@ import (
 
 // Configuration to run the program
 type Configuration struct {
-	BufferWindowDays uint8     `yaml:"buffer_window_days"`
+	// BufferWindowDays indicates how many days in advance a reminder
+	// issue should be created.  Use a signed integer so configs can
+	// express reasonable values without worrying about overflow when
+	// comparing against days-calculated-from-the-clock. Negative values
+	// are invalid and the reader enforces this.
+	BufferWindowDays int       `yaml:"buffer_window_days"`
 	Projects         []Project `yaml:"projects"`
 }
 
@@ -44,5 +50,23 @@ func ReadConfiguration() Configuration {
 	if err != nil {
 		log.Fatalf("Error while parsing the config file %v, Err: %v", configFile, err)
 	}
+
+	if err := config.validate(); err != nil {
+		log.Fatalf("invalid configuration: %v", err)
+	}
+
 	return config
+}
+
+// validate checks that fields in Configuration contain reasonable
+// values.  callers may use this directly in tests; ReadConfiguration
+// itself fatals on any error.
+func (c *Configuration) validate() error {
+	if c.BufferWindowDays < 0 {
+		return fmt.Errorf("buffer_window_days must be non-negative")
+	}
+	if c.BufferWindowDays > 100000 {
+		return fmt.Errorf("buffer_window_days is unreasonably large (%d)", c.BufferWindowDays)
+	}
+	return nil
 }

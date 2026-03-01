@@ -59,8 +59,9 @@ func main() {
 			log.Printf("current: %v requested: %v", currentTime, requestedTime)
 			log.Printf("difference: %v configured: %v", numberOfDays, config.BufferWindowDays)
 
-			// found a case where action is needed
-			if uint8(numberOfDays) == config.BufferWindowDays {
+			// found a case where action is needed; both sides are ints now so
+			// the comparison is straightforward and cannot wrap around.
+			if numberOfDays == config.BufferWindowDays {
 				// do as scheduled on this date
 				projectInstance := client.GetProject(project)
 				errInfo := projectInstance.CreateIssue(schedule)
